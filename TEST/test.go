@@ -18,7 +18,7 @@ type Person struct {
 }
 
 func Filltimep(size int) <-chan *time.Time {
-	c := make(chan *time.Time)
+	c := make(chan *time.Time,size)
 	for {
 
 		go func() {
@@ -54,26 +54,24 @@ func Newperson(s string) *Person {
 }
 
 func (p *Person) Add(ctx context.Context, c <-chan *time.Time) {
-	timeout, cancel := context.WithTimeout(ctx, 2*time.Second)
+	//timeout, cancel := context.WithTimeout(ctx, 2*time.Second)
 	var count int
-	defer cancel()
-	go func() {
+	//defer cancel()
 		for {
 			select {
 			case d, ok := <-c:
 				if !ok {
-					log.Printf("status: %v", ok)
+					//log.Printf("status: %v", ok)
 					return
 				}
 				log.Printf("result%v: %v", p.s, d.UTC())
 
-			case <-timeout.Done():
+			case <-time.After(2 * time.Nanosecond):
 				count++
-				log.Printf("count: %v", count)
+				log.Printf("timeout,count: %v", count)
 				return
 			}
 		}
-	}()
 }
 
 func Merge(cs ...<-chan int) <-chan int {
@@ -184,6 +182,30 @@ func FaninTime(c1, cs <-chan *time.Time) <-chan *time.Time {
 			}
 
 		}
+	}()
+	return out
+}
+
+func Consolidate(cs ...<-chan *time.Time) <-chan *time.Time{
+	out := make(chan *time.Time)
+	var wg sync.WaitGroup
+	wg.Add(len(cs))
+	for _,in := range cs{
+		go func(in <-chan *time.Time, out chan<- *time.Time) {
+			defer wg.Done()
+			for{
+				d,ok := <- in
+				if !ok{
+					return
+				}
+				out <- d
+				
+			}
+		}(in,out)
+	}
+	go func() {
+		wg.Wait()
+		close(out)
 	}()
 	return out
 }
