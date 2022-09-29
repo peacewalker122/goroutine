@@ -64,9 +64,9 @@ func (p *Person) Add(ctx context.Context, c <-chan *time.Time) {
 					//log.Printf("status: %v", ok)
 					return
 				}
-				log.Printf("result%v: %v", p.s, d.UTC())
+				log.Printf("result: %v", d.UTC().Hour())
 
-			case <-time.After(2 * time.Nanosecond):
+			case <-time.After(200 * time.Millisecond):
 				count++
 				log.Printf("timeout,count: %v", count)
 				return
@@ -127,7 +127,7 @@ func FillChan(number int) <-chan int {
 }
 
 func MergeTime(ctx context.Context, cs ...<-chan time.Time) <-chan time.Time {
-	out := make(chan time.Time, 1)
+	out := make(chan time.Time)
 	wg := new(sync.WaitGroup)
 	wg.Add(len(cs))
 	for _, c := range cs {
@@ -186,7 +186,7 @@ func FaninTime(c1, cs <-chan *time.Time) <-chan *time.Time {
 	return out
 }
 
-func Consolidate(cs ...<-chan *time.Time) <-chan *time.Time{
+func Consolidate(ctx context.Context,cs ...<-chan *time.Time) <-chan *time.Time{
 	out := make(chan *time.Time)
 	var wg sync.WaitGroup
 	wg.Add(len(cs))
@@ -195,12 +195,15 @@ func Consolidate(cs ...<-chan *time.Time) <-chan *time.Time{
 			// decrement the waitgroup when completed into zero.
 			defer wg.Done()
 			for{
-				d,ok := <- in
-				if !ok{
-					return
-				}
-				out <- d
-				
+			select{
+			case <-ctx.Done():
+				return
+			case d,ok := <- in:
+			if !ok{
+				return
+			}
+			out <- d
+			}
 			}
 		}(in,out)
 	}
