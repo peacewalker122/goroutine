@@ -192,6 +192,7 @@ func Consolidate(cs ...<-chan *time.Time) <-chan *time.Time{
 	wg.Add(len(cs))
 	for _,in := range cs{
 		go func(in <-chan *time.Time, out chan<- *time.Time) {
+			// decrement the waitgroup when completed into zero.
 			defer wg.Done()
 			for{
 				d,ok := <- in
@@ -204,6 +205,7 @@ func Consolidate(cs ...<-chan *time.Time) <-chan *time.Time{
 		}(in,out)
 	}
 	go func() {
+		// waiting untl the delta become zero.
 		wg.Wait()
 		close(out)
 	}()
