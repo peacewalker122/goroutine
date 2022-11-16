@@ -4,6 +4,7 @@ import twod "testfile/builder/2D"
 
 type ThreeDimensional[T float64] interface {
 	Volume() T
+	Diagonal() T
 }
 
 type Tube[T float64] struct {
@@ -27,4 +28,7 @@ func NewTube[T float64](Height, Radius T) (ThreeDimensional[T], error) {
 
 func (n *Tube[T]) Volume() T {
 	return T(n.Area * n.Height)
+}
+func (n *Tube[T]) Diagonal() T {
+	return T(n.Area/n.Circumfence)
 }
