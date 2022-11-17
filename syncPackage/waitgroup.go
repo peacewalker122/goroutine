@@ -1,34 +1,47 @@
 package syncpackage
 
 import (
+	"log"
+	"os"
 	"sync"
 )
 
-type Coroutines[T any] interface {
-	Helloworld() T
+type Coroutines interface {
+	Helloworld() error
 }
 
-type wg[T any] struct {
+type wg struct {
 	sync  *sync.WaitGroup
-	value []T
+	file  *os.File
+	value []string
 }
 
-func Newg[T any](sync *sync.WaitGroup, value ...T) Coroutines[T] {
-	return &wg[T]{
+func Newg(sync *sync.WaitGroup, file *os.File, value ...string) Coroutines {
+	return &wg{
 		sync:  sync,
+		file:  file,
 		value: value,
 	}
 }
 
-func (n *wg[T]) Helloworld() T {
-	channel := make(chan T, len(n.value))
-	for _, i := range n.value {
-		n.sync.Add(1)
-		go func() {
+func (n *wg) Helloworld() error {
+	length := len(n.value)
+	channel := make(chan error, length)
+	go func() {
+		defer close(channel)
+		for _, i := range n.value {
+			n.sync.Add(1)
 			defer n.sync.Done()
-			channel <- i
-		}()
-	}
+			_, err := n.file.WriteString(i)
+			channel <- err
+		}
+	}()
 	n.sync.Wait()
-	return T(<-channel)
+	return <-channel
+}
+
+func MutexLock[T any](arg T,mutex sync.Locker) {
+	mutex.Lock()
+	log.Println(arg)
+	defer mutex.Unlock()
 }

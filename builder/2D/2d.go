@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+type Shape twoDimentional[float64]
+
 type twoDimentional[T float64] interface {
 	Area() T
 	Circumfence() T
