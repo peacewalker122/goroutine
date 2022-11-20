@@ -2,6 +2,7 @@ package syncpackage
 
 import (
 	"fmt"
+	"net/http"
 	"sync"
 )
 
@@ -17,11 +18,14 @@ func NewMutex(wg *sync.WaitGroup, mutexs *sync.Mutex) Coroutines {
 	}
 }
 
-func (n *mutex) Helloworld() error {
+func (n *mutex) PrimeCounter(done <-chan interface{}) (<-chan int, int) {
 	n.Lock()
 	fmt.Println("HelloWorld")
 	defer n.Unlock()
 
-	return nil
+	return nil, 1
 }
 
+func (n *mutex) CoroutinesFetch(done <-chan interface{}) <-chan *http.Response {
+	panic("unin")
+}
